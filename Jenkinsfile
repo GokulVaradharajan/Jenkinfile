@@ -1,42 +1,27 @@
-pipeline
-{
-agent any
-stages
-{
- stage('Git pull source code')
- {
-  steps
-  {
-   git branch: 'master', url: 'https://github.com/GokulVaradharajan/petclinic.git'  
-  }
- } 
- stage('Build')
- {    
-  steps
-   {
-    echo "This is Build project run with maven tool ................"
-   }
-  }
- stage('Test')
- {
-  steps
-  {
-    echo "This is Test project run with Selenium tool ................"
-  }
- } 
- stage('Deploy')
- {    
-  steps
-   {
-    echo "This is Deploy project run with Docker tool ................"
-   }
-  }
- stage('Monitor')
- {    
-  steps
-   {
-    echo "This is Monitoring project run with Splunk tool ................"
-   }
-  }
-}
+node {
+    // Get Artifactory server instance, defined in the Artifactory Plugin administration page.
+    def server = Artifactory.server "SERVER_ID"
+    // Create an Artifactory Maven instance.
+    def rtMaven = Artifactory.newMavenBuild()
+    def buildInfo
+
+    stage('Clone sources') {
+        git url: 'https://github.com/GokulVaradharajan/petclinic.git'
+    }
+
+    stage('Artifactory configuration') {
+        // Tool name from Jenkins configuration
+        rtMaven.tool = "M3"
+        // Set Artifactory repositories for dependencies resolution and artifacts deployment.
+        rtMaven.deployer releaseRepo:'libs-release-local', snapshotRepo:'libs-snapshot-local', server: server
+        rtMaven.resolver releaseRepo:'libs-release', snapshotRepo:'libs-snapshot', server: server
+    }
+
+    stage('Maven build') {
+        buildInfo = rtMaven.run pom: 'petclinic/pom.xml', goals: 'clean install'
+    }
+
+    stage('Publish build info') {
+        server.publishBuildInfo buildInfo
+    }
 }
