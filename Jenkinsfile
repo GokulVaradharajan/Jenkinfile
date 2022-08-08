@@ -3,11 +3,11 @@ pipeline
 agent any
 stages
 {
- stage('Commit')
+ stage('Git pull source code')
  {
   steps
   {
-   echo "Source Code Download from the GITHUB to Declarative Pipeline......."
+   git branch: 'master', url: 'https://github.com/GokulVaradharajan/petclinic.git'  
   }
  } 
  stage('Build')
